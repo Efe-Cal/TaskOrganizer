@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import re
 import keyboard
 import os
-import time
+import json
 
 def parse_duration(duration_str):
     duration_str = duration_str.strip().lower()
@@ -84,6 +84,7 @@ def reorder_tasks(tasks):
     cursor_idx = 0
     moving = False
     moving_idx = None
+    console = Console()
     while True:
         display_tasks_with_cursor(tasks, cursor_idx, moving_idx)
         event = keyboard.read_event(suppress=True)
@@ -91,6 +92,22 @@ def reorder_tasks(tasks):
             continue
         if event.name == 'esc':
             break
+        if event.name == 'a':
+            console.print("\n[bold yellow]Add a new task[/bold yellow]")
+            name = console.input("[green]Enter task name: [/green]")
+            duration = console.input("[yellow]Enter task duration (e.g., 30m, 1h): [/yellow]")
+            tasks.append({'name': name, 'duration': duration})
+            cursor_idx = len(tasks) - 1
+            continue
+        if event.name == 'e' and tasks:
+            console.print(f"\n[bold yellow]Edit task: {tasks[cursor_idx]['name']} ({tasks[cursor_idx]['duration']})[/bold yellow]")
+            new_name = console.input(f"[green]Enter new name (leave blank to keep '{tasks[cursor_idx]['name']}'): [/green]")
+            new_duration = console.input(f"[yellow]Enter new duration (leave blank to keep '{tasks[cursor_idx]['duration']}'): [/yellow]")
+            if new_name.strip():
+                tasks[cursor_idx]['name'] = new_name
+            if new_duration.strip():
+                tasks[cursor_idx]['duration'] = new_duration
+            continue
         if not moving:
             if event.name == 'down':
                 cursor_idx = min(len(tasks) - 1, cursor_idx + 1)
@@ -114,18 +131,25 @@ def reorder_tasks(tasks):
 
 def main():
     console = Console()
-    console.print("[bold cyan]Welcome to Task Organizer![/bold cyan]")
     tasks = []
-    while True:
-        name = console.input("[green]Enter task name (or type 'done' to finish): [/green]")
-        if name.lower() == 'done':
-            break
-        duration = console.input("[yellow]Enter task duration (e.g., 30m, 1h): [/yellow]")
-        tasks.append({'name': name, 'duration': duration})
-        console.print(f"[bold green]Task '{name}' with duration '{duration}' added.[/bold green]\n")
+    # Check for existing schedule.json
+    if os.path.exists("schedule.json"):
+        console.print("[bold yellow]A saved schedule was found.[/bold yellow]")
+        choice = console.input("[cyan]Continue with existing schedule? (y/n): [/cyan]").strip().lower()
+        if choice == 'y':
+            with open("schedule.json", "r", encoding="utf-8") as f:
+                tasks = json.load(f)
+        else:
+            console.print("[italic]Starting with a new schedule.[/italic]")
+    if not tasks:
+        while True:
+            name = console.input("[green]Enter task name (or type 'done' to finish): [/green]")
+            if name.lower() == 'done':
+                break
+            duration = console.input("[yellow]Enter task duration (e.g., 30m, 1h): [/yellow]")
+            tasks.append({'name': name, 'duration': duration})
+            console.print(f"[bold green]Task '{name}' with duration '{duration}' added.[/bold green]\n")
     if tasks:
-        console.print("\n[bold yellow]Press any key to start reordering tasks. Press [esc] to finish.[/bold yellow]")
-        keyboard.read_event()  # Wait for any key
         reorder_tasks(tasks)
         # After reordering, print the final ascii schedule and write to file
         ascii_lines = render_ascii_schedule(tasks)
@@ -136,6 +160,12 @@ def main():
             for line in ascii_lines:
                 f.write(line + "\n")
         console.print("\n[bold cyan]Schedule written to schedule.txt[/bold cyan]")
+        # Ask to save as JSON
+        save_json = console.input("\n[cyan]Save this schedule? (y/n): [/cyan]").strip().lower()
+        if save_json == 'y':
+            with open("schedule.json", "w", encoding="utf-8") as f:
+                json.dump(tasks, f, indent=2, ensure_ascii=False)
+            console.print("[bold green]Schedule saved[/bold green]")
     else:
         console.print("[italic]No tasks added.[/italic]")
     console.print("\n[bold cyan]Thank you for using Task Organizer![/bold cyan]")
