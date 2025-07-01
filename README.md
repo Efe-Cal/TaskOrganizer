@@ -39,6 +39,7 @@ Task Organizer is a terminal-based tool that helps you plan, organize, and visua
 - **Spacebar:** Pick up/drop a task for reordering
 - **a:** Add a new task
 - **e:** Edit the selected task
+- **d:** Delete the selected task
 - **Esc:** Finish and save your schedule
 
 ## Why I created this?

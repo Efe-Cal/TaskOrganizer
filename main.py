@@ -183,6 +183,14 @@ def reorder_tasks(tasks):
             if new_duration.strip():
                 tasks[cursor_idx]['duration'] = new_duration
             continue
+        if event_name == 'd' and tasks:
+            task = tasks[cursor_idx]
+            confirm = console.input(f"[red]Delete task '{task['name']}' ({task['duration']})? (y/n): [/red]").strip().lower()
+            if confirm == 'y':
+                del tasks[cursor_idx]
+                if cursor_idx >= len(tasks):
+                    cursor_idx = max(0, len(tasks) - 1)
+            continue
         if not moving:
             if event_name == 'down':
                 cursor_idx = min(len(tasks) - 1, cursor_idx + 1)
